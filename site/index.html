@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PlayPin - Pin YouTube speed and quality</title>
+    <meta name="description" content="PlayPin applies your chosen YouTube playback speed and asks for the highest available video quality when videos start.">
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f5f7;
+        --ink: #1d1d1f;
+        --muted: #6e6e73;
+        --line: rgba(29, 29, 31, 0.12);
+        --accent: #ff2d55;
+        --accent-dark: #c7193f;
+        --panel: rgba(255, 255, 255, 0.84);
+        --shadow: 0 24px 70px rgba(29, 29, 31, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        overflow-x: hidden;
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+        font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 760;
+        text-decoration: none;
+      }
+
+      .brand img {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 22px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 390px;
+        gap: 72px;
+        align-items: center;
+        min-height: 620px;
+        padding: 42px 0 70px;
+      }
+
+      h1 {
+        max-width: 700px;
+        margin: 0;
+        font-size: clamp(48px, 7vw, 86px);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 590px;
+        margin: 26px 0 0;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.42;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 34px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 22px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+        color: #fff;
+        font-size: 15px;
+        font-weight: 720;
+        text-decoration: none;
+        box-shadow: 0 12px 26px rgba(255, 45, 85, 0.24);
+      }
+
+      .quiet {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .mockup {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.56);
+        box-shadow: var(--shadow);
+      }
+
+      .popup {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+      }
+
+      .popup-head,
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .popup-title {
+        font-weight: 760;
+      }
+
+      .rate {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .label {
+        display: block;
+        margin: 18px 0 8px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 760;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .segments {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(118, 118, 128, 0.12);
+      }
+
+      .segments span {
+        padding: 8px 0;
+        border-radius: 9px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .segments .on {
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+      }
+
+      .input {
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.74);
+        font-weight: 650;
+      }
+
+      .toggle-row {
+        margin: 18px 0;
+        font-weight: 700;
+      }
+
+      .switch {
+        width: 46px;
+        height: 26px;
+        border-radius: 999px;
+        background: #34c759;
+        position: relative;
+      }
+
+      .switch::after {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+        content: "";
+      }
+
+      .save {
+        padding: 10px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+        color: #fff;
+        text-align: center;
+        font-weight: 760;
+      }
+
+      .band {
+        padding: 82px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .section-title {
+        max-width: 640px;
+        margin: 0 0 34px;
+        font-size: clamp(32px, 4vw, 52px);
+        line-height: 1.04;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+      }
+
+      .item {
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .item h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .item p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 34px 0 44px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 820px) {
+        .shell {
+          width: min(560px, calc(100% - 28px));
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .hero,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          gap: 38px;
+          min-height: auto;
+          padding-top: 32px;
+        }
+
+        h1 {
+          max-width: 330px;
+          font-size: clamp(36px, 9vw, 40px);
+          line-height: 1.02;
+        }
+
+        .lead {
+          max-width: 330px;
+          font-size: 16px;
+        }
+
+        .mockup {
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .actions,
+        footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="shell nav">
+      <a class="brand" href="#">
+        <img src="../assets/playpin-icon.svg" alt="">
+        <span>PlayPin</span>
+      </a>
+      <div class="nav-links" aria-label="Page sections">
+        <a href="#how">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#install">Install</a>
+      </div>
+    </nav>
+
+    <main>
+      <section class="shell hero">
+        <div>
+          <h1>Start YouTube at your speed.</h1>
+          <p class="lead">Choose a playback speed once. PlayPin applies it when videos start and asks YouTube for the highest available quality.</p>
+          <div class="actions">
+            <a class="button" href="#install">Get PlayPin</a>
+            <span class="quiet">No tracking. Local settings only.</span>
+          </div>
+        </div>
+
+        <div class="mockup" aria-label="PlayPin popup preview">
+          <div class="popup">
+            <div class="popup-head">
+              <span class="popup-title">PlayPin</span>
+              <span class="rate">1.5x</span>
+            </div>
+            <span class="label">Speed</span>
+            <div class="segments">
+              <span>1x</span>
+              <span>1.25x</span>
+              <span class="on">1.5x</span>
+              <span>2x</span>
+            </div>
+            <span class="label">Custom</span>
+            <div class="input">1.5</div>
+            <div class="toggle-row">
+              <span>Max quality</span>
+              <span class="switch" aria-hidden="true"></span>
+            </div>
+            <div class="save">Save</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" class="band">
+        <div class="shell">
+          <h2 class="section-title">It applies your preference at the start of each video.</h2>
+          <div class="grid">
+            <article class="item">
+              <h3>Pick a speed</h3>
+              <p>Use a preset or type your own value. PlayPin stores that setting in Chrome sync storage.</p>
+            </article>
+            <article class="item">
+              <h3>Watch normally</h3>
+              <p>The extension runs only on YouTube pages and applies the speed when videos change.</p>
+            </article>
+            <article class="item">
+              <h3>Prefer max quality</h3>
+              <p>When YouTube exposes quality levels, PlayPin requests the highest non-auto option available.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="privacy" class="band">
+        <div class="shell">
+          <h2 class="section-title">No account, no analytics, no tracking.</h2>
+          <p class="lead">PlayPin only stores your speed and max-quality preference. It does not collect browsing history, video history, personal data, or analytics events.</p>
+        </div>
+      </section>
+
+      <section id="install" class="band">
+        <div class="shell">
+          <h2 class="section-title">Install status</h2>
+          <p class="lead">The extension package is ready for Chrome Web Store upload. Until it is approved, load the release zip or project folder as an unpacked extension in Chrome developer mode.</p>
+          <div class="actions">
+            <a class="button" href="https://github.com/bjorkepoc/playpin/releases/latest">Download release zip</a>
+            <a class="quiet" href="privacy.html">Read privacy policy</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <span>PlayPin is an independent tool and is not affiliated with YouTube or Google.</span>
+      <span>Version 0.1.1</span>
+    </footer>
+  </body>
+</html>
